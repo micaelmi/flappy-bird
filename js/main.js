@@ -7,6 +7,8 @@ hitSound.src = './audio/hit.wav'
 const canvas = document.querySelector('canvas');
 const context = canvas.getContext('2d');
 
+let frames = 0;
+
 // Flappy Bird
 function createBird() {
     const bird = {
@@ -23,7 +25,7 @@ function createBird() {
             bird.speed = - bird.jump;
         },
         update() {
-            if (collision(bird, ground)) {
+            if (collision(bird, globals.ground)) {
                 hitSound.play();
                 setTimeout(() => {
                     changeScreen(screens.START);
@@ -33,10 +35,30 @@ function createBird() {
             bird.speed = bird.speed + bird.gravity
             bird.y = bird.y + bird.speed;
         },
+        movements: [
+            { sourceX: 0, sourceY: 00 },
+            { sourceX: 0, sourceY: 26 },
+            { sourceX: 0, sourceY: 52 },
+            { sourceX: 0, sourceY: 26 },
+        ],
+        frame: 0,
+        updateFrame() {
+            const framesInterval = 10
+            const exceeded = frames % framesInterval === 0;
+            if (exceeded) {
+                const incrementBase = 1
+                const increment = incrementBase + bird.frame
+                const repeatBase = bird.movements.length
+
+                bird.frame = increment % repeatBase
+            }
+        },
         draw() {
+            bird.updateFrame()
+            const { sourceX, sourceY } = bird.movements[bird.frame];
             context.drawImage(
                 sprites,                    // Fonte da imagem
-                bird.sourceX, bird.sourceY, // Posição da imagem na sprite
+                sourceX, sourceY, // Posição da imagem na sprite
                 bird.width, bird.height,    // Tamanho da imagem (recorte na sprite)
                 bird.x, bird.y,             // Posição dentro do canvas
                 bird.width, bird.height     // Tamanho no canvas
@@ -48,31 +70,41 @@ function createBird() {
 }
 
 // Ground
-const ground = {
-    sourceX: 0,
-    sourceY: 610,
-    width: 224,
-    height: 112,
-    x: 0,
-    y: canvas.height - 112,
-    draw() {
-        context.drawImage(
-            sprites,
-            ground.sourceX, ground.sourceY,
-            ground.width, ground.height,
-            ground.x, ground.y,
-            ground.width, ground.height,
-        );
+function createGround() {
+    const ground = {
+        sourceX: 0,
+        sourceY: 610,
+        width: 224,
+        height: 112,
+        x: 0,
+        y: canvas.height - 112,
+        update() {
+            const speed = 1
+            const repeatIn = 112
+            const move = ground.x - speed
 
-        context.drawImage(
-            sprites,
-            ground.sourceX, ground.sourceY,
-            ground.width, ground.height,
-            (ground.x + ground.width), ground.y,
-            ground.width, ground.height,
-        );
-    },
-};
+            ground.x = move % repeatIn
+        },
+        draw() {
+            context.drawImage(
+                sprites,
+                ground.sourceX, ground.sourceY,
+                ground.width, ground.height,
+                ground.x, ground.y,
+                ground.width, ground.height,
+            );
+
+            context.drawImage(
+                sprites,
+                ground.sourceX, ground.sourceY,
+                ground.width, ground.height,
+                (ground.x + ground.width), ground.y,
+                ground.width, ground.height,
+            );
+        },
+    };
+    return ground
+}
 
 // Background
 const background = {
@@ -139,10 +171,11 @@ const screens = {
     START: {
         init() {
             globals.bird = createBird()
+            globals.ground = createGround()
         },
         draw() {
             background.draw();
-            ground.draw();
+            globals.ground.draw();
             globals.bird.draw();
             startGameMessage.draw();
         },
@@ -151,13 +184,13 @@ const screens = {
             changeScreen(screens.GAME);
         },
         update() {
-
+            globals.ground.update();
         }
     },
     GAME: {
         draw() {
             background.draw();
-            ground.draw();
+            globals.ground.draw();
             globals.bird.draw();
         },
         click() {
@@ -183,6 +216,7 @@ function collision(bird, ground) {
 function loop() {
     activeScreen.draw();
     activeScreen.update();
+    frames++;
     requestAnimationFrame(loop)
 }
 

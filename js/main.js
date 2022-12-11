@@ -86,12 +86,69 @@ const background = {
     },
 };
 
+
+// startGameMessage
+const startGameMessage = {
+    sourceX: 134,
+    sourceY: 0,
+    width: 174,
+    height: 152,
+    x: (canvas.width / 2) - (174 / 2),
+    y: 50,
+    draw() {
+        context.drawImage(
+            sprites,
+            startGameMessage.sourceX, startGameMessage.sourceY,
+            startGameMessage.width, startGameMessage.height,
+            startGameMessage.x, startGameMessage.y,
+            startGameMessage.width, startGameMessage.height,
+        );
+    },
+};
+
+// Screens
+let activeScreen = {};
+
+function changeScreen(screen) {
+    activeScreen = screen
+}
+
+const screens = {
+    START: {
+        draw() {
+            background.draw();
+            ground.draw();
+            bird.draw();
+            startGameMessage.draw();
+        },
+        update() {
+
+        },
+        click() {
+            changeScreen(screens.GAME);
+        }
+    },
+    GAME: {
+        draw() {
+            background.draw();
+            ground.draw();
+            bird.draw();
+        },
+        update() {
+            bird.update();
+        }
+    }
+}
+
 function loop() {
-    background.draw();
-    ground.draw();
-    bird.update();
-    bird.draw();
+    activeScreen.draw();
+    activeScreen.update();
     requestAnimationFrame(loop)
 }
 
+window.addEventListener('click', function () {
+    if (activeScreen.click) activeScreen.click();
+})
+
+changeScreen(screens.START);
 loop();

@@ -58,7 +58,7 @@ function createBird() {
             const { sourceX, sourceY } = bird.movements[bird.frame];
             context.drawImage(
                 sprites,                    // Fonte da imagem
-                sourceX, sourceY, // Posição da imagem na sprite
+                sourceX, sourceY,           // Posição da imagem na sprite
                 bird.width, bird.height,    // Tamanho da imagem (recorte na sprite)
                 bird.x, bird.y,             // Posição dentro do canvas
                 bird.width, bird.height     // Tamanho no canvas
@@ -104,6 +104,97 @@ function createGround() {
         },
     };
     return ground
+}
+
+function createPipes() {
+    const pipes = {
+        width: 52,
+        height: 400,
+        ground: {
+            sourceX: 0,
+            sourceY: 169,
+        },
+        sky: {
+            sourceX: 52,
+            sourceY: 169,
+        },
+        gap: 100,
+        draw() {
+
+            pipes.pairs.forEach((pair) => {
+                const yRandom = pair.y
+
+                const skyPipeX = pair.x
+                const skyPipeY = yRandom
+
+                context.drawImage(
+                    sprites,
+                    pipes.sky.sourceX, pipes.sky.sourceY,
+                    pipes.width, pipes.height,
+                    skyPipeX, skyPipeY,
+                    pipes.width, pipes.height,
+                );
+
+                const groundPipeX = pair.x
+                const groundPipeY = pipes.height + pipes.gap + yRandom
+                context.drawImage(
+                    sprites,
+                    pipes.ground.sourceX, pipes.ground.sourceY,
+                    pipes.width, pipes.height,
+                    groundPipeX, groundPipeY,
+                    pipes.width, pipes.height,
+                );
+
+                pair.skyPipe = {
+                    x: skyPipeX,
+                    y: pipes.height + skyPipeY
+                }
+
+                pair.groundPipe = {
+                    x: groundPipeX,
+                    y: groundPipeY
+                }
+            })
+        },
+        collision(pair) {
+            const birdTop = globals.bird.y;
+            const birdBottom = globals.bird.y + globals.bird.height;
+            if (globals.bird.x >= pair.x) {
+                if (birdTop <= pair.skyPipe.y) {
+                    return true;
+                }
+
+                if (birdBottom >= pair.groundPipe.y) {
+                    return true;
+                }
+            }
+
+            return false;
+        },
+        pairs: [],
+        update() {
+            const passedMinFrames = frames % 100 === 0;
+            if (passedMinFrames) {
+                pipes.pairs.push({
+                    x: canvas.width,
+                    y: (Math.random() + 1) * (-160),
+                })
+            }
+
+            pipes.pairs.forEach((pair) => {
+                pair.x -= 2
+
+                if (pipes.collision(pair)) {
+                    changeScreen(screens.START)
+                }
+
+                if (pair.x + pipes.width <= 0) {
+                    pipes.pairs.shift();
+                }
+            })
+        },
+    };
+    return pipes
 }
 
 // Background
@@ -172,6 +263,7 @@ const screens = {
         init() {
             globals.bird = createBird()
             globals.ground = createGround()
+            globals.pipes = createPipes()
         },
         draw() {
             background.draw();
@@ -190,6 +282,7 @@ const screens = {
     GAME: {
         draw() {
             background.draw();
+            globals.pipes.draw();
             globals.ground.draw();
             globals.bird.draw();
         },
@@ -198,6 +291,8 @@ const screens = {
         },
         update() {
             globals.bird.update();
+            globals.ground.update();
+            globals.pipes.update();
         }
     }
 }

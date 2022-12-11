@@ -1,32 +1,50 @@
 const sprites = new Image();
 sprites.src = './img/sprites.png';
 
+const hitSound = new Audio()
+hitSound.src = './audio/hit.wav'
+
 const canvas = document.querySelector('canvas');
 const context = canvas.getContext('2d');
 
 // Flappy Bird
-const bird = {
-    sourceX: 0,
-    sourceY: 0,
-    width: 33,
-    height: 24,
-    x: 10,
-    y: 50,
-    speed: 0,
-    gravity: 0.25,
-    update() {
-        bird.speed = bird.speed + bird.gravity
-        bird.y = bird.y + bird.speed;
-    },
-    draw() {
-        context.drawImage(
-            sprites,                    // Fonte da imagem
-            bird.sourceX, bird.sourceY, // Posição da imagem na sprite
-            bird.width, bird.height,    // Tamanho da imagem (recorte na sprite)
-            bird.x, bird.y,             // Posição dentro do canvas
-            bird.width, bird.height     // Tamanho no canvas
-        );
+function createBird() {
+    const bird = {
+        sourceX: 0,
+        sourceY: 0,
+        width: 33,
+        height: 24,
+        x: 10,
+        y: 50,
+        speed: 0,
+        gravity: 0.25,
+        jump: 4.6,
+        rise() {
+            bird.speed = - bird.jump;
+        },
+        update() {
+            if (collision(bird, ground)) {
+                hitSound.play();
+                setTimeout(() => {
+                    changeScreen(screens.START);
+                }, 500)
+                return;
+            }
+            bird.speed = bird.speed + bird.gravity
+            bird.y = bird.y + bird.speed;
+        },
+        draw() {
+            context.drawImage(
+                sprites,                    // Fonte da imagem
+                bird.sourceX, bird.sourceY, // Posição da imagem na sprite
+                bird.width, bird.height,    // Tamanho da imagem (recorte na sprite)
+                bird.x, bird.y,             // Posição dentro do canvas
+                bird.width, bird.height     // Tamanho no canvas
+            );
+        }
     }
+
+    return bird
 }
 
 // Ground
@@ -86,7 +104,6 @@ const background = {
     },
 };
 
-
 // startGameMessage
 const startGameMessage = {
     sourceX: 134,
@@ -107,37 +124,60 @@ const startGameMessage = {
 };
 
 // Screens
+const globals = {};
 let activeScreen = {};
 
 function changeScreen(screen) {
     activeScreen = screen
+
+    if (activeScreen.init) {
+        activeScreen.init();
+    }
 }
 
 const screens = {
     START: {
+        init() {
+            globals.bird = createBird()
+        },
         draw() {
             background.draw();
             ground.draw();
-            bird.draw();
+            globals.bird.draw();
             startGameMessage.draw();
+        },
+
+        click() {
+            changeScreen(screens.GAME);
         },
         update() {
 
-        },
-        click() {
-            changeScreen(screens.GAME);
         }
     },
     GAME: {
         draw() {
             background.draw();
             ground.draw();
-            bird.draw();
+            globals.bird.draw();
+        },
+        click() {
+            globals.bird.rise();
         },
         update() {
-            bird.update();
+            globals.bird.update();
         }
     }
+}
+
+function collision(bird, ground) {
+    const birdY = bird.y + bird.height
+    const groundY = ground.y;
+
+    if (birdY >= groundY) {
+        return true;
+    }
+
+    return false;
 }
 
 function loop() {

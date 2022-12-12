@@ -4,6 +4,12 @@ sprites.src = './img/sprites.png';
 const hitSound = new Audio()
 hitSound.src = './audio/hit.wav'
 
+const jumpSound = new Audio()
+jumpSound.src = './audio/jump.wav'
+
+const fallSound = new Audio()
+fallSound.src = './audio/fall.wav'
+
 const canvas = document.querySelector('canvas');
 const context = canvas.getContext('2d');
 
@@ -20,15 +26,16 @@ function createBird() {
         y: 50,
         speed: 0,
         gravity: 0.25,
-        jump: 4.6,
+        jump: 4.7,
         rise() {
             bird.speed = - bird.jump;
+            jumpSound.play();
         },
         update() {
             if (collision(bird, globals.ground)) {
                 hitSound.play();
                 setTimeout(() => {
-                    changeScreen(screens.START);
+                    changeScreen(screens.GAME_OVER);
                 }, 500)
                 return;
             }
@@ -106,6 +113,7 @@ function createGround() {
     return ground
 }
 
+// Canos
 function createPipes() {
     const pipes = {
         width: 52,
@@ -118,7 +126,7 @@ function createPipes() {
             sourceX: 52,
             sourceY: 169,
         },
-        gap: 100,
+        gap: 115,
         draw() {
 
             pipes.pairs.forEach((pair) => {
@@ -159,7 +167,7 @@ function createPipes() {
         collision(pair) {
             const birdTop = globals.bird.y;
             const birdBottom = globals.bird.y + globals.bird.height;
-            if (globals.bird.x >= pair.x) {
+            if (globals.bird.x + globals.bird.width >= pair.x) {
                 if (birdTop <= pair.skyPipe.y) {
                     return true;
                 }
@@ -185,7 +193,8 @@ function createPipes() {
                 pair.x -= 2
 
                 if (pipes.collision(pair)) {
-                    changeScreen(screens.START)
+                    hitSound.play();
+                    changeScreen(screens.GAME_OVER)
                 }
 
                 if (pair.x + pipes.width <= 0) {
@@ -195,6 +204,28 @@ function createPipes() {
         },
     };
     return pipes
+}
+
+// Placar
+function createScoreboard() {
+    const scoreboard = {
+        score: 0,
+        update() {
+            const framesInterval = 100
+            const exceeded = frames % framesInterval === 0;
+
+            if (exceeded) {
+                scoreboard.score++;
+            }
+        },
+        draw() {
+            context.font = '70px VT323'
+            context.fillStyle = 'black'
+            context.fillText(`${scoreboard.score}`, (canvas.width / 2) - 20, canvas.height - 50)
+
+        },
+    };
+    return scoreboard
 }
 
 // Background
@@ -246,6 +277,25 @@ const startGameMessage = {
     },
 };
 
+// gameOverMessage
+const gameOverMessage = {
+    sourceX: 134,
+    sourceY: 153,
+    width: 226,
+    height: 200,
+    x: (canvas.width / 2) - (226 / 2),
+    y: 50,
+    draw() {
+        context.drawImage(
+            sprites,
+            gameOverMessage.sourceX, gameOverMessage.sourceY,
+            gameOverMessage.width, gameOverMessage.height,
+            gameOverMessage.x, gameOverMessage.y,
+            gameOverMessage.width, gameOverMessage.height,
+        );
+    },
+};
+
 // Screens
 const globals = {};
 let activeScreen = {};
@@ -280,11 +330,15 @@ const screens = {
         }
     },
     GAME: {
+        init() {
+            globals.scoreboard = createScoreboard();
+        },
         draw() {
             background.draw();
             globals.pipes.draw();
             globals.ground.draw();
             globals.bird.draw();
+            globals.scoreboard.draw();
         },
         click() {
             globals.bird.rise();
@@ -293,6 +347,20 @@ const screens = {
             globals.bird.update();
             globals.ground.update();
             globals.pipes.update();
+            globals.scoreboard.update();
+        }
+    },
+    GAME_OVER: {
+        draw() {
+            background.draw();
+            globals.ground.draw();
+            gameOverMessage.draw();
+        },
+        update() {
+
+        },
+        click() {
+            changeScreen(screens.START)
         }
     }
 }
